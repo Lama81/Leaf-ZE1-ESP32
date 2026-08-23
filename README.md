@@ -39,13 +39,14 @@ CLAUDE.md            Detailed technical reference (architecture, guards, CAN dec
 
 ## Hardware
 
-- **ESP32 dev board** (plain `esp32` target, see `sdkconfig`; not an S2/S3/C3 variant).
-- **2x CAN transceiver** (one per bus, 3.3V logic level compatible with the ESP32's TWAI TX/RX pins).
+- **ESP32 dev board** (plain `esp32` target, see `sdkconfig`; not an S2/S3/C3 variant). Tested on a WROVER-IE module.
+- **2x SN65HVD230 CAN transceiver** (one per bus, 3.3V logic level).
 - **Particle Boron** (LTE cellular module, for remote control and telemetry beyond local WiFi range).
-- **12V-to-logic power regulation**, tapped from the vehicle's 12V system, to power the ESP32 and Boron.
-- **A physical connection point on the vehicle's CAN buses** (connector/location is model and generation specific; not documented here).
+- **12V-to-5V buck converter** into the ESP32's VIN pin. The ESP32's own 3V3 output powers both SN65HVD230 transceivers. Use a single common ground point (buck + ESP32 + both transceivers) tied to chassis ground with one wire, to avoid ground loops.
+- **10kOhm pull-up resistors** on the CAR-CAN and EV-CAN TX lines (GPIO32 and GPIO26, each to 3.3V); not needed on RX, GND, or VCC lines.
+- **Tap point**: on this ZE1 (2019, 40 kWh), both buses were tapped at the **gateway connector M101**: EV-CAN on pins 12 (H) / 24 (L), CAR-CAN on pins 1 (H) / 13 (L). Connector pinout and exact tap point vary by model year and trim; verify against your own vehicle before wiring.
 
-Exact part numbers, enclosure, and physical wiring/soldering details aren't finalized in this repo yet; see [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) (French) for what has been logged so far.
+Enclosure and full soldering/assembly steps aren't finalized in this repo yet; see [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) (French) for what has been logged so far.
 
 ## Wiring / GPIO pins (ESP32)
 
@@ -121,4 +122,4 @@ The ESP32 can enter deep sleep after a period of inactivity (no HTTP request or 
 
 ## Sources
 
-CAN frames and command sequences based on [OVMS `vehicle_nissanleaf.cpp`](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3) and the [`dalathegreat/leaf_can_bus_messages`](https://github.com/dalathegreat/leaf_can_bus_messages) DBC.
+CAN frames and command sequences based on [OVMS `vehicle_nissanleaf.cpp`](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3) and the [`dalathegreat/leaf_can_bus_messages`](https://github.com/dalathegreat/leaf_can_bus_messages) DBC. Gateway connector (M101) pinout reference: [blog.jingo.uk](https://blog.jingo.uk). Official OVMS ZE1 documentation: [docs.openvehicles.com](https://docs.openvehicles.com).

@@ -39,13 +39,14 @@ CLAUDE.md            Référence technique détaillée (architecture, guards, d�
 
 ## Matériel
 
-- **Carte de développement ESP32** (cible `esp32` simple, voir `sdkconfig` ; pas une variante S2/S3/C3).
-- **2x transceiver CAN** (un par bus, logique 3.3V compatible avec les pins TWAI TX/RX de l'ESP32).
+- **Carte de développement ESP32** (cible `esp32` simple, voir `sdkconfig` ; pas une variante S2/S3/C3). Testé sur un module WROVER-IE.
+- **2x transceiver CAN SN65HVD230** (un par bus, logique 3.3V).
 - **Particle Boron** (module cellulaire LTE, pour le contrôle et la télémétrie à distance au-delà de la portée WiFi locale).
-- **Régulation d'alimentation 12V vers logique**, tirée du système 12V du véhicule, pour alimenter l'ESP32 et le Boron.
-- **Un point de branchement physique sur les bus CAN du véhicule** (connecteur/emplacement spécifique au modèle et à la génération ; non documenté ici).
+- **Buck 12V vers 5V** vers le pin VIN de l'ESP32. La sortie 3V3 de l'ESP32 alimente les deux transceivers SN65HVD230. Un seul point GND commun (buck + ESP32 + les deux transceivers), relié à la masse châssis par un seul fil, pour éviter les boucles de masse.
+- **Résistances pull-up 10kOhm** sur les lignes TX de CAR-CAN et EV-CAN (GPIO32 et GPIO26, chacune vers 3.3V) ; pas nécessaire sur RX, GND, ou VCC.
+- **Point de branchement** : sur cette ZE1 (2019, 40 kWh), les deux bus ont été tapés au **connecteur gateway M101** : EV-CAN sur les pins 12 (H) / 24 (L), CAR-CAN sur les pins 1 (H) / 13 (L). Le brochage du connecteur et le point de tap exact varient selon l'année-modèle et la finition ; à vérifier sur ton propre véhicule avant de câbler.
 
-Les numéros de pièces exacts, le boîtier, et les détails de câblage/soudure physiques ne sont pas encore finalisés dans ce repo ; voir [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) pour ce qui a été journalisé jusqu'ici.
+Le boîtier et les étapes complètes de câblage/assemblage ne sont pas encore finalisées dans ce repo ; voir [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) pour ce qui a été journalisé jusqu'ici.
 
 ## Câblage / pins GPIO (ESP32)
 
@@ -121,4 +122,4 @@ L'ESP32 peut entrer en deep sleep après une période d'inactivité (pas de requ
 
 ## Sources
 
-Trames CAN et séquences de commande basées sur [OVMS `vehicle_nissanleaf.cpp`](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3) et le DBC [`dalathegreat/leaf_can_bus_messages`](https://github.com/dalathegreat/leaf_can_bus_messages).
+Trames CAN et séquences de commande basées sur [OVMS `vehicle_nissanleaf.cpp`](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3) et le DBC [`dalathegreat/leaf_can_bus_messages`](https://github.com/dalathegreat/leaf_can_bus_messages). Référence brochage du connecteur gateway (M101) : [blog.jingo.uk](https://blog.jingo.uk). Documentation officielle OVMS ZE1 : [docs.openvehicles.com](https://docs.openvehicles.com).

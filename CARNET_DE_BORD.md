@@ -8,30 +8,30 @@ Ce document est le récit détaillé. Pour la doc technique de référence (arch
 
 ## Partie 1 : Montage physique
 
-*Section à compléter : les détails de câblage/soudure n'ont pas été décrits pendant les sessions couvertes par ce journal.*
+### Matériel
 
-### Matériel (à compléter)
-
-- ESP32 (modèle : ?)
+- ESP32 (module WROVER-IE)
 - Module Particle Boron (LTE)
-- Transceiver(s) CAN (modèle : ?), un par bus (EV-CAN, CAR-CAN)
-- Alimentation 12V → régulateur (détails : ?)
-- Point de branchement sur le bus CAN de la voiture (connecteur/emplacement : ?)
-- Boîtier/enclosure (?)
-- Outils de soudure utilisés (?)
+- 2x transceiver CAN SN65HVD230, un par bus (EV-CAN, CAR-CAN)
+- Buck 12V → 5V vers VIN de l'ESP32 ; la sortie 3V3 de l'ESP32 alimente les deux SN65HVD230
+- Point de branchement sur le bus CAN de la voiture : connecteur gateway M101 (voir plus bas)
+- Boîtier/enclosure (à compléter)
+- Outils de soudure utilisés (à compléter)
 
 ### Câblage GPIO (connu, extrait du firmware)
 
 | Fonction | GPIO ESP32 | Côté Boron | Notes |
 |---|---|---|---|
-| EV-CAN TX | GPIO32 | n/a | Écoute seule, toujours actif |
+| EV-CAN TX | GPIO32 | n/a | Écoute seule, toujours actif. Résistance pull-up 10kOhm vers 3.3V |
 | EV-CAN RX | GPIO33 | n/a | |
-| CAR-CAN TX | GPIO26 | n/a | Transmission ponctuelle (wake-up, lock/unlock, climat) |
+| CAR-CAN TX | GPIO26 | n/a | Transmission ponctuelle (wake-up, lock/unlock, climat). Résistance pull-up 10kOhm vers 3.3V |
 | CAR-CAN RX | GPIO14 | n/a | |
 | UART TX → | GPIO19 | RX (D10) | Liaison ESP32 ↔ Boron, 9600 bauds |
 | UART RX ← | GPIO21 | TX (D9) | |
 | Réveil (EXT0) ← | GPIO34 | D8 | Niveau haut = réveil deep sleep. Résistance pull-down externe nécessaire (GPIO34-39 sans pull interne sur l'ESP32 d'origine) |
-| GND commun | n/a | GND | Obligatoire entre ESP32 et Boron |
+| GND commun | n/a | GND | Obligatoire entre ESP32 et Boron. Un seul point GND commun (buck + ESP32 + les deux SN65HVD230), relié à la masse châssis par un seul fil, pour éviter les boucles de masse |
+
+Convention de couleur de fil utilisée sur le montage de référence : bleu = TX (peu importe le bus), jaune = RX. La gaine logique ESP32↔SN65 (6 fils : 3.3V, GND, TX1, RX1, TX2, RX2) peut être regroupée sans souci (non différentielle) ; CAN-H/L doivent rester torsadés et physiquement séparés de cette gaine logique.
 
 ### Étapes de montage (à compléter)
 
@@ -39,12 +39,12 @@ Ce document est le récit détaillé. Pour la doc technique de référence (arch
 2. ?
 3. ?
 
-### Point de branchement sur le véhicule (à compléter)
+### Point de branchement sur le véhicule
 
 - Bus tappé : EV-CAN et CAR-CAN (deux bus logiques séparés de la Leaf ZE1)
-- Emplacement physique du tap : ?
-- Alimentation 12V tirée depuis : ?
-- Fusible ajouté : ?
+- Emplacement physique du tap (sur cette ZE1 2019, 40 kWh) : connecteur gateway **M101**. EV-CAN sur les pins 12 (H) / 24 (L), CAR-CAN sur les pins 1 (H) / 13 (L). Le brochage exact varie selon l'année-modèle/finition, à revérifier au cas par cas.
+- Alimentation 12V tirée depuis : à compléter
+- Fusible ajouté : à compléter
 
 ---
 
