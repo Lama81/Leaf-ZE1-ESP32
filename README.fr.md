@@ -37,6 +37,16 @@ webapp/              Page web statique - dashboard + contrôle à distance
 CLAUDE.md            Référence technique détaillée (architecture, guards, décodage CAN)
 ```
 
+## Matériel
+
+- **Carte de développement ESP32** (cible `esp32` simple, voir `sdkconfig` ; pas une variante S2/S3/C3).
+- **2x transceiver CAN** (un par bus, logique 3.3V compatible avec les pins TWAI TX/RX de l'ESP32).
+- **Particle Boron** (module cellulaire LTE, pour le contrôle et la télémétrie à distance au-delà de la portée WiFi locale).
+- **Régulation d'alimentation 12V vers logique**, tirée du système 12V du véhicule, pour alimenter l'ESP32 et le Boron.
+- **Un point de branchement physique sur les bus CAN du véhicule** (connecteur/emplacement spécifique au modèle et à la génération ; non documenté ici).
+
+Les numéros de pièces exacts, le boîtier, et les détails de câblage/soudure physiques ne sont pas encore finalisés dans ce repo ; voir [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) pour ce qui a été journalisé jusqu'ici.
+
 ## Câblage / pins GPIO (ESP32)
 
 | Fonction | GPIO ESP32 | Côté Boron | Notes |

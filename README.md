@@ -37,6 +37,16 @@ webapp/              Static web page - dashboard + remote control
 CLAUDE.md            Detailed technical reference (architecture, guards, CAN decoding)
 ```
 
+## Hardware
+
+- **ESP32 dev board** (plain `esp32` target, see `sdkconfig`; not an S2/S3/C3 variant).
+- **2x CAN transceiver** (one per bus, 3.3V logic level compatible with the ESP32's TWAI TX/RX pins).
+- **Particle Boron** (LTE cellular module, for remote control and telemetry beyond local WiFi range).
+- **12V-to-logic power regulation**, tapped from the vehicle's 12V system, to power the ESP32 and Boron.
+- **A physical connection point on the vehicle's CAN buses** (connector/location is model and generation specific; not documented here).
+
+Exact part numbers, enclosure, and physical wiring/soldering details aren't finalized in this repo yet; see [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) (French) for what has been logged so far.
+
 ## Wiring / GPIO pins (ESP32)
 
 | Function | ESP32 GPIO | Boron side | Notes |
