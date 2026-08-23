@@ -9,3 +9,4 @@ sdkconfig.old
 boron/
 vehicle_nissanleaf.cpp
 firmware/leaf-fw/main/wifi_secrets.h
+webapp/.well-known/assetlinks.json

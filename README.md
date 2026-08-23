@@ -95,6 +95,7 @@ Voir [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) pour le détail du build APK et de
 ## Configuration avant de flasher
 
 - **WiFi local** : copie `firmware/leaf-fw/main/wifi_secrets.h.example` en `wifi_secrets.h` (ignoré par git) et renseigne ton propre `WIFI_SSID`/`WIFI_PASS` avant de flasher.
+- **APK natif (optionnel)** : si tu construis ta propre APK (voir [Installation en app](#installation-en-app-pwa--apk)), copie `webapp/.well-known/assetlinks.json.example` en `assetlinks.json` (ignoré par git) et renseigne ton propre `package_name`/`sha256_cert_fingerprints`.
 - **Device ID / token Particle** : à entrer dans la page web, section Configuration (en bas). Stocké uniquement en `localStorage` sur chaque appareil, jamais dans le code source.
   - Crée un access token qui n'expire pas : `particle token create --never-expire` (les tokens par défaut expirent après 90 jours).
 
