@@ -1,79 +1,81 @@
 # Leaf-ZE1-ESP32
 
-Firmware DIY pour contrôler une Nissan Leaf ZE1 (2019+) à distance : verrouillage/déverrouillage des portes, préconditionnement climatisation, et monitoring batterie/véhicule en direct, soit en local via WiFi (à côté de la voiture), soit à distance depuis n'importe où via un module cellulaire LTE (Particle Boron) et une page web.
+*[Version francaise](README.fr.md)*
 
-Projet personnel, non affilié à Nissan. Les trames CAN (wake-up, lock/unlock, décodage batterie) viennent de rétro-ingénierie (voir [Sources](#sources)) ; certaines sont confirmées sur le véhicule, d'autres sont du best-effort documenté dans le code.
+DIY firmware to remotely control a Nissan Leaf ZE1 (2019+): lock/unlock the doors, precondition the climate control, and monitor battery/vehicle status live, either locally over WiFi (next to the car) or from anywhere via a cellular LTE module (Particle Boron) and a web page.
 
-## Fonctionnalités
+Personal project, not affiliated with Nissan. The CAN frames (wake-up, lock/unlock, battery decoding) come from reverse engineering (see [Sources](#sources)); some are confirmed on the vehicle, others are documented best-effort guesses in the code.
 
-- Verrouillage / déverrouillage des portes (fiable, objectif principal)
-- Préconditionnement climatisation (température réglable), avec guards contre le redémarrage spontané du BCM
-- Monitoring batterie (SOC/SOH), climatisation, état véhicule : dashboard web local en direct (SSE)
-- Contrôle à distance via LTE (Boron + Particle Cloud), aucune app à installer, page web installable en PWA ou en APK natif (voir [Installation en app](#installation-en-app-pwa--apk))
-- Deep sleep de l'ESP32 (réveil sur commande à distance ou toutes les 6h) pour limiter le drain de la batterie 12V du véhicule quand la voiture est parquée
+## Features
+
+- Door lock/unlock (reliable, primary goal)
+- Climate preconditioning (adjustable temperature), with guards against the BCM's spontaneous restart
+- Battery monitoring (SOC/SOH), climate, vehicle state: live local web dashboard (SSE)
+- Remote control over LTE (Boron + Particle Cloud), no app to install, web page installable as a PWA or a native APK (see [App install](#app-install-pwa-or-apk))
+- ESP32 deep sleep (wakes on remote command or every 6h) to limit drain on the vehicle's 12V battery while parked
 
 ## Architecture
 
 ```
-Téléphone (webapp) --HTTPS--> Particle Cloud --LTE--> Boron --UART--> ESP32 --CAN--> Voiture
-                                                                         |
-Téléphone (WiFi local, leafcan) -------------------------------------- AP local
+Phone (webapp) --HTTPS--> Particle Cloud --LTE--> Boron --UART--> ESP32 --CAN--> Car
+                                                                     |
+Phone (local WiFi, leafcan) -------------------------------------- local AP
 ```
 
-- **ESP32** : un seul TWAI (CAN) physique, multiplexé entre deux bus logiques de la voiture : EV-CAN (écoute passive continue : batterie, climat, état véhicule) et CAR-CAN (transmission ponctuelle : wake-up, lock/unlock, climat). Sert aussi un dashboard web local (AP WiFi `leafcan`) et de l'OTA.
-- **Boron** (Particle, LTE) : relais entre le cloud Particle et l'ESP32 par UART. Chaque commande cloud (`lock`, `unlock`, `heat`, `status`, `wifi`) est transmise en texte simple et attend une réponse avant de répondre au cloud : pas de polling, aucune donnée cellulaire consommée en dehors d'une action explicite.
-- **webapp** : page statique (HTML/CSS/JS, aucun framework) qui parle directement à l'API cloud Particle depuis le navigateur. Installable comme app (PWA) sur téléphone.
+- **ESP32**: a single physical TWAI (CAN) controller, multiplexed between two logical buses on the car: EV-CAN (continuous passive listening: battery, climate, vehicle state) and CAR-CAN (transient transmission: wake-up, lock/unlock, climate). Also serves a local web dashboard (WiFi AP `leafcan`) and OTA updates.
+- **Boron** (Particle, LTE): relay between the Particle cloud and the ESP32 over UART. Each cloud command (`lock`, `unlock`, `heat`, `status`, `wifi`) is sent as plain text and waits for a response before answering the cloud: no polling, no cellular data used outside an explicit action.
+- **webapp**: static page (HTML/CSS/JS, no framework) that talks directly to the Particle cloud API from the browser. Installable as an app (PWA) on a phone.
 
-Détails d'architecture technique (mutex TWAI, guards climate, décodage des trames CAN, concurrence) : voir [`CLAUDE.md`](CLAUDE.md).
+Technical architecture details (TWAI mutex, climate guards, CAN frame decoding, concurrency): see [`CLAUDE.md`](CLAUDE.md).
 
-## Structure du repo
+## Repo structure
 
 ```
-firmware/leaf-fw/   ESP32 - firmware ESP-IDF (fichier unique main/main.c)
-boron/               Particle Boron - relais LTE (src/boron.cpp)
-webapp/              Page web statique - dashboard + contrôle à distance
-CLAUDE.md            Référence technique détaillée (architecture, guards, décodage CAN)
+firmware/leaf-fw/   ESP32 - ESP-IDF firmware (single file main/main.c)
+boron/               Particle Boron - LTE relay (src/boron.cpp)
+webapp/              Static web page - dashboard + remote control
+CLAUDE.md            Detailed technical reference (architecture, guards, CAN decoding)
 ```
 
-## Câblage / pins GPIO (ESP32)
+## Wiring / GPIO pins (ESP32)
 
-| Fonction | GPIO ESP32 | Côté Boron | Notes |
+| Function | ESP32 GPIO | Boron side | Notes |
 |---|---|---|---|
-| EV-CAN TX | GPIO32 | n/a | Mode écoute seule (listen-only), toujours actif |
+| EV-CAN TX | GPIO32 | n/a | Listen-only mode, always active |
 | EV-CAN RX | GPIO33 | n/a | |
-| CAR-CAN TX | GPIO26 | n/a | Mode normal, transmission ponctuelle uniquement |
+| CAR-CAN TX | GPIO26 | n/a | Normal mode, transient transmission only |
 | CAR-CAN RX | GPIO14 | n/a | |
-| UART TX → | GPIO19 | RX (D10) | Liaison ESP32 ↔ Boron, 9600 bauds |
+| UART TX → | GPIO19 | RX (D10) | ESP32 ↔ Boron link, 9600 baud |
 | UART RX ← | GPIO21 | TX (D9) | |
-| Réveil (EXT0) ← | GPIO34 | D8 | Niveau haut = réveil deep sleep. **Nécessite une résistance pull-down externe** (GPIO34-39 n'ont pas de pull interne sur l'ESP32 d'origine) |
-| GND commun | n/a | GND | Obligatoire entre ESP32 et Boron |
+| Wake (EXT0) ← | GPIO34 | D8 | High level = deep sleep wakeup. **Requires an external pull-down resistor** (GPIO34-39 have no internal pull on the original ESP32) |
+| Common GND | n/a | GND | Required between ESP32 and Boron |
 
-Un transceiver CAN (2x, un par bus) est nécessaire entre les GPIO TWAI de l'ESP32 et les bus CAN réels du véhicule, non documenté ici, à adapter selon le modèle utilisé.
+A CAN transceiver (2x, one per bus) is required between the ESP32's TWAI GPIOs and the vehicle's real CAN buses; not documented here, adapt to the model used.
 
 ## Build & flash
 
 ### ESP32 (firmware/leaf-fw)
 
-Prérequis : toolchain ESP-IDF installée (cible `esp32`), `idf.py` accessible dans le shell.
+Prerequisites: ESP-IDF toolchain installed (target `esp32`), `idf.py` on the shell PATH.
 
 ```
 cd firmware/leaf-fw
 idf.py build
-idf.py -p <PORT> flash monitor      # premier flash, par USB
+idf.py -p <PORT> flash monitor      # first flash, over USB
 ```
 
-Après le premier flash USB, les mises à jour suivantes peuvent se faire par OTA. Connecte-toi au WiFi `leafcan` et ouvre `http://192.168.4.1/update` pour uploader le `.bin` (`build/leaf-fw.bin`).
+After the first USB flash, subsequent updates can be done over OTA: connect to the `leafcan` WiFi and open `http://192.168.4.1/update` to upload the `.bin` (`build/leaf-fw.bin`).
 
 ### Boron (boron/)
 
-Prérequis : [Particle CLI](https://docs.particle.io/getting-started/developer-tools/cli/) installée, connectée à ton compte, device réclamé (claimed).
+Prerequisites: [Particle CLI](https://docs.particle.io/getting-started/developer-tools/cli/) installed, logged into your account, device claimed.
 
 ```
 cd boron
-particle cloud flash <device_id_ou_nom>     # compile dans le cloud Particle + flash OTA (LTE)
+particle cloud flash <device_id_or_name>     # compiles in the Particle cloud + OTA flash (LTE)
 ```
 
-Ou en local par USB (ne consomme aucune donnée cellulaire) :
+Or locally over USB (uses no cellular data):
 ```
 particle compile boron src --target 6.4.1 --saveTo target/6.4.1/boron/boron.bin
 particle flash --usb target/6.4.1/boron/boron.bin
@@ -81,34 +83,34 @@ particle flash --usb target/6.4.1/boron/boron.bin
 
 ### webapp (webapp/)
 
-Page statique, aucun build. Héberge le dossier tel quel sur n'importe quel service HTTPS (Cloudflare Pages/Workers, GitHub Pages, Netlify...). HTTPS est requis pour l'installation en PWA (icône sur écran d'accueil, mode plein écran).
+Static page, no build step. Host the folder as-is on any HTTPS service (Cloudflare Pages/Workers, GitHub Pages, Netlify...). HTTPS is required for PWA installation (home screen icon, fullscreen mode).
 
-## Installation en app (PWA ou APK)
+## App install (PWA or APK)
 
-La page est installable de deux façons sur Android :
+The page can be installed two ways on Android:
 
-- **PWA** : dans Chrome, menu (trois points) puis "Installer l'application". Nécessite `manifest.json` + un service worker (`sw.js`, déjà inclus) atteignables sans authentification. Si la page est derrière un mur de login (ex: Cloudflare Access), prévoir une exception pour ces fichiers spécifiquement, sinon Chrome ne peut pas construire l'app installable.
-- **APK natif (TWA)** : pour un vrai plein écran sans dépendre du comportement PWA de Chrome, la page peut être empaquetée en `.apk` avec [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) (outil officiel Google). Ça demande Node.js, un JDK 17, et le Android SDK command-line tools. Le plein écran "de confiance" (sans barre du navigateur) exige aussi que `/.well-known/assetlinks.json` (empreinte SHA-256 du certificat de signature de l'app) soit atteignable sans authentification, même remarque que pour le manifest.
+- **PWA**: in Chrome, menu (three dots) then "Install app". Requires `manifest.json` + a service worker (`sw.js`, already included) reachable without authentication. If the page sits behind a login wall (e.g. Cloudflare Access), carve out an exception for these specific files, otherwise Chrome can't build the installable app.
+- **Native APK (TWA)**: for true fullscreen without depending on Chrome's PWA behavior, the page can be packaged into a `.apk` with [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) (Google's official tool). Requires Node.js, a JDK 17, and the Android SDK command-line tools. "Trusted" fullscreen (no browser bar) also requires `/.well-known/assetlinks.json` (SHA-256 fingerprint of the app's signing certificate) to be reachable without authentication, same note as for the manifest.
 
-Voir [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) pour le détail du build APK et de la config d'accès utilisée sur le déploiement de référence.
+See [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) (French) for the detailed APK build and access config used on the reference deployment.
 
-## Configuration avant de flasher
+## Configuration before flashing
 
-- **WiFi local** : copie `firmware/leaf-fw/main/wifi_secrets.h.example` en `wifi_secrets.h` (ignoré par git) et renseigne ton propre `WIFI_SSID`/`WIFI_PASS` avant de flasher.
-- **APK natif (optionnel)** : si tu construis ta propre APK (voir [Installation en app](#installation-en-app-pwa--apk)), copie `webapp/.well-known/assetlinks.json.example` en `assetlinks.json` (ignoré par git) et renseigne ton propre `package_name`/`sha256_cert_fingerprints`.
-- **Device ID / token Particle** : à entrer dans la page web, section Configuration (en bas). Stocké uniquement en `localStorage` sur chaque appareil, jamais dans le code source.
-  - Crée un access token qui n'expire pas : `particle token create --never-expire` (les tokens par défaut expirent après 90 jours).
+- **Local WiFi**: copy `firmware/leaf-fw/main/wifi_secrets.h.example` to `wifi_secrets.h` (gitignored) and fill in your own `WIFI_SSID`/`WIFI_PASS` before flashing.
+- **Native APK (optional)**: if you build your own APK (see [App install](#app-install-pwa-or-apk)), copy `webapp/.well-known/assetlinks.json.example` to `assetlinks.json` (gitignored) and fill in your own `package_name`/`sha256_cert_fingerprints`.
+- **Device ID / Particle token**: entered in the web page, Configuration section (bottom). Stored only in `localStorage` on each device, never in the source code.
+  - Create a token that never expires: `particle token create --never-expire` (default tokens expire after 90 days).
 
-## Sécurité
+## Security
 
-- Ce repo ne doit **jamais** contenir de vrai mot de passe WiFi ni de token d'accès Particle en clair dans le code. Un token exposé permet de contrôler le véhicule à distance (verrouillage, climat) depuis n'importe où jusqu'à révocation. Toujours vérifier `git diff`/`git status` avant de committer si des identifiants ont été testés en dur temporairement pendant le développement.
-- Un secret retiré d'un commit **reste visible dans les commits précédents**, changer la valeur dans le dernier commit ne l'efface pas de l'historique. Avant de rendre un repo public, vérifier l'historique complet (`git log -p -S"motdepasse" -- chemin/fichier`) et réécrire l'historique (`git filter-repo` ou équivalent) si un secret y a déjà été commité.
-- Si la webapp est hébergée quelque part de plus qu'un usage strictement privé, mettre une couche d'authentification devant (ex: Cloudflare Access) est recommandé. La page elle-même n'a aucune protection interne au-delà du token Particle.
+- This repo must **never** contain a real WiFi password or Particle access token in plain text in the code. An exposed token allows controlling the vehicle remotely (lock, climate) from anywhere until revoked. Always check `git diff`/`git status` before committing if credentials were temporarily hardcoded during development.
+- A secret removed from a commit **stays visible in earlier commits**; changing the value in the latest commit does not erase it from history. Before making a repo public, check the full history (`git log -p -S"password" -- path/file`) and rewrite history (`git filter-repo` or equivalent) if a secret was ever committed.
+- If the webapp is hosted anywhere beyond strictly private use, adding an authentication layer in front (e.g. Cloudflare Access) is recommended. The page itself has no internal protection beyond the Particle token.
 
 ## Deep sleep
 
-L'ESP32 peut entrer en deep sleep après une période d'inactivité (pas de requête HTTP ni de commande UART) pour limiter la consommation quand la voiture est parquée longtemps. Deux sources de réveil : commande à distance via le Boron (GPIO34) ou un timer périodique (6h, rafraîchit silencieusement SOC/SOH sans jamais activer le WiFi). Le dashboard web local est injoignable tant que l'ESP32 dort, usage principal prévu via le Boron/la webapp, pas l'accès direct.
+The ESP32 can enter deep sleep after a period of inactivity (no HTTP request or UART command) to limit consumption while the car is parked for a long time. Two wakeup sources: remote command via the Boron (GPIO34) or a periodic timer (6h, silently refreshes SOC/SOH without ever turning on WiFi). The local web dashboard is unreachable while the ESP32 sleeps; the intended main usage is through the Boron/webapp, not direct access.
 
 ## Sources
 
-Trames CAN et séquences de commande basées sur [OVMS `vehicle_nissanleaf.cpp`](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3) et le DBC [`dalathegreat/leaf_can_bus_messages`](https://github.com/dalathegreat/leaf_can_bus_messages).
+CAN frames and command sequences based on [OVMS `vehicle_nissanleaf.cpp`](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3) and the [`dalathegreat/leaf_can_bus_messages`](https://github.com/dalathegreat/leaf_can_bus_messages) DBC.
