@@ -103,8 +103,6 @@ See [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) (French) for the detailed APK build
 
 ## Security
 
-- This repo must **never** contain a real WiFi password or Particle access token in plain text in the code. An exposed token allows controlling the vehicle remotely (lock, climate) from anywhere until revoked. Always check `git diff`/`git status` before committing if credentials were temporarily hardcoded during development.
-- A secret removed from a commit **stays visible in earlier commits**; changing the value in the latest commit does not erase it from history. Before making a repo public, check the full history (`git log -p -S"password" -- path/file`) and rewrite history (`git filter-repo` or equivalent) if a secret was ever committed.
 - If the webapp is hosted anywhere beyond strictly private use, adding an authentication layer in front (e.g. Cloudflare Access) is recommended. The page itself has no internal protection beyond the Particle token.
 
 ## Deep sleep

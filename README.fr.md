@@ -103,8 +103,6 @@ Voir [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) pour le détail du build APK et de
 
 ## Sécurité
 
-- Ce repo ne doit **jamais** contenir de vrai mot de passe WiFi ni de token d'accès Particle en clair dans le code. Un token exposé permet de contrôler le véhicule à distance (verrouillage, climat) depuis n'importe où jusqu'à révocation. Toujours vérifier `git diff`/`git status` avant de committer si des identifiants ont été testés en dur temporairement pendant le développement.
-- Un secret retiré d'un commit **reste visible dans les commits précédents**, changer la valeur dans le dernier commit ne l'efface pas de l'historique. Avant de rendre un repo public, vérifier l'historique complet (`git log -p -S"motdepasse" -- chemin/fichier`) et réécrire l'historique (`git filter-repo` ou équivalent) si un secret y a déjà été commité.
 - Si la webapp est hébergée quelque part de plus qu'un usage strictement privé, mettre une couche d'authentification devant (ex: Cloudflare Access) est recommandé. La page elle-même n'a aucune protection interne au-delà du token Particle.
 
 ## Deep sleep
