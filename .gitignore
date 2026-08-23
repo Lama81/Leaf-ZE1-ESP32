@@ -1,0 +1,11 @@
+.pio/
+.vscode/
+*.bin
+*.elf
+*.map
+build/
+*.log
+sdkconfig.old
+boron/
+vehicle_nissanleaf.cpp
+firmware/leaf-fw/main/wifi_secrets.h

@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.matlacharite.leafremote",
+    "sha256_cert_fingerprints": [
+      "0B:76:9E:D5:69:38:7A:F2:6B:E4:3F:7F:0D:43:12:02:B2:B0:33:34:8F:E7:A3:C6:12:B5:AE:32:4F:E4:BD:69"
+    ]
+  }
+}]

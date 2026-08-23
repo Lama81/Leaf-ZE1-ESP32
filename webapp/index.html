@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Leaf Remote</title>
+<link rel="manifest" href="assets/manifest.json">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/icon-192.png" type="image/png" sizes="192x192">
+<meta name="theme-color" content="#10131a">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0f1115;
+    --card: #171a21;
+    --card-border: #262b36;
+    --text: #e8eaed;
+    --muted: #8b93a1;
+    --accent: #3b82f6;
+    --accent-dim: #1e3a6d;
+    --ok: #22c55e;
+    --err: #ef4444;
+    --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 16px;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 60px;
+  }
+  .hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 4px;
+    margin: 0 0 24px;
+    padding: 20px 0 4px 20px;
+    background: linear-gradient(135deg, var(--card) 0%, #10131a 100%);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .hero-brand {
+    display: flex;
+    align-items: center;
+    align-self: flex-start;
+    margin-top: -4px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+  .hero-brand .logo {
+    height: 82px;
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
+    margin-right: 6px;
+  }
+  .hero-car {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    height: auto;
+    max-height: 140px;
+    object-fit: contain;
+    object-position: right center;
+    margin-right: -10px;
+    filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.55));
+  }
+  h1 {
+    font-size: 25px;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--text);
+    margin: 0;
+    white-space: nowrap;
+  }
+  .conn-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .conn-status.online { color: var(--ok); }
+  .conn-status.offline { color: var(--err); }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 16px 16px 12px;
+    margin-bottom: 14px;
+  }
+  .card h2 {
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+  .row { display: flex; gap: 10px; }
+  button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--accent-dim);
+    color: var(--text);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 10px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:active { transform: scale(0.97); }
+  .btn-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+  }
+  summary .btn-icon {
+    width: 16px;
+    height: 16px;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.secondary {
+    background: transparent;
+    border-color: var(--card-border);
+    color: var(--muted);
+  }
+  button.danger { border-color: var(--err); }
+  .statusline {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+    min-height: 18px;
+    text-align: center;
+    transition: color 0.15s;
+  }
+  .statusline.ok { color: var(--ok); }
+  .statusline.err { color: var(--err); }
+  .statusline.warn { color: var(--warn); }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--card-border);
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 3px solid var(--bg);
+  }
+  .temp-display {
+    font-size: 22px;
+    font-weight: 700;
+    min-width: 64px;
+    text-align: right;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .stat {
+    background: var(--bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .stat .label { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .stat .value { font-size: 22px; font-weight: 700; margin-top: 2px; }
+  .stat .value.dim { color: var(--muted); font-weight: 500; font-size: 18px; }
+  .stat .value.on { color: var(--ok); }
+  .stat .value.off { color: var(--muted); }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+  .toggle-row .label { font-size: 17px; }
+  .switch {
+    position: relative;
+    width: 48px;
+    height: 28px;
+    background: var(--card-border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .switch.on { background: var(--accent); }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.2s;
+  }
+  .switch.on::after { transform: translateX(20px); }
+
+  details { margin-top: 4px; }
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 6px;
+  }
+  .settings-body { padding-top: 10px; }
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    margin-top: 10px;
+  }
+  input[type=text], input[type=password] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 10px;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .save-btn { margin-top: 12px; }
+  .last-updated { text-align: center; font-size: 11px; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-brand">
+    <img src="logo.svg" alt="" class="logo" onerror="this.style.display='none'">
+    <div>
+      <h1>Leaf<br>Remote</h1>
+      <button type="button" id="conn-status" class="conn-status" aria-label="Rafraîchir le statut de connexion">
+        <span id="conn-text">Vérification…</span>
+      </button>
+    </div>
+  </div>
+  <img src="leaf.png" alt="Nissan Leaf" class="hero-car" onerror="this.style.display='none'">
+</div>
+
+<div class="card">
+  <h2>Portes</h2>
+  <div class="row">
+    <button id="btn-lock"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Verrouiller</button>
+    <button id="btn-unlock"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>Déverrouiller</button>
+  </div>
+  <div class="statusline" id="lock-status"></div>
+</div>
+
+<div class="card">
+  <h2>Climatisation</h2>
+  <div class="slider-row">
+    <input type="range" id="temp-slider" min="16" max="32" step="0.5" value="22">
+    <div class="temp-display"><span id="temp-value">22</span>°C</div>
+  </div>
+  <div class="row">
+    <button id="btn-heat-on"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2 2 0 0 0-4 0v11.26a4 4 0 1 0 4 0Z"/><line x1="12" y1="7" x2="12" y2="13"/></svg>Démarrer</button>
+    <button id="btn-heat-off" class="secondary"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg>Arrêter</button>
+  </div>
+  <div class="statusline" id="heat-status"></div>
+</div>
+
+<div class="card">
+  <h2>État de la voiture</h2>
+  <div class="stat-grid">
+    <div class="stat">
+      <div class="label">Batterie</div>
+      <div class="value dim" id="stat-soc">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Santé (SOH)</div>
+      <div class="value dim" id="stat-soh">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Climatisation</div>
+      <div class="value dim" id="stat-climate">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Véhicule</div>
+      <div class="value dim" id="stat-vehicle">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Odomètre</div>
+      <div class="value dim" id="stat-odo">—</div>
+    </div>
+  </div>
+  <button id="btn-refresh" class="secondary" style="margin-top:12px;width:100%">Mettre à jour les informations</button>
+  <div class="statusline" id="status-status"></div>
+  <div class="last-updated" id="last-updated"></div>
+  <button id="btn-read-odo" class="secondary" style="margin-top:8px;width:100%">Lire l'odomètre (peut échouer, véhicule doit être éveillé)</button>
+  <div class="statusline" id="odo-status"></div>
+</div>
+
+<div class="card">
+  <h2>WiFi ESP32 (pour mise à jour OTA)</h2>
+  <div class="toggle-row">
+    <div class="label">Wifi <b>Leafcan</b></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="wifi-state-label" class="value off" style="font-size:13px">OFF</span>
+      <div class="switch" id="wifi-switch"></div>
+    </div>
+  </div>
+  <div class="statusline" id="wifi-status"></div>
+</div>
+
+<div class="card">
+  <h2>Maintenance</h2>
+  <button id="btn-reboot-esp" class="secondary" style="width:100%">Redémarrer l'ESP32</button>
+  <div class="statusline" id="reboot-esp-status"></div>
+  <button id="btn-reboot-boron" class="secondary" style="width:100%;margin-top:8px">Redémarrer le Boron</button>
+  <div class="statusline" id="reboot-boron-status"></div>
+</div>
+
+<details>
+  <summary><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M17 6h3M4 12h3M9 12h11M4 18h13M20 18h.01"/><circle cx="14" cy="6" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>Configuration (device ID / token)</summary>
+  <div class="settings-body">
+    <label for="cfg-device">Device ID Particle</label>
+    <input type="text" id="cfg-device" placeholder="ex: e00fce68439ef0a1c2b84884" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <label for="cfg-token">Access Token Particle</label>
+    <input type="password" id="cfg-token" placeholder="token" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button class="save-btn" id="btn-save-cfg">Sauvegarder</button>
+    <div class="statusline" id="cfg-status"></div>
+  </div>
+</details>
+
+<div style="text-align:center;font-size:10px;color:var(--muted);margin-top:14px">Build v7</div>
+
+<script>
+const LS_DEVICE = 'leaf_device_id';
+const LS_TOKEN = 'leaf_access_token';
+const LS_TEMP = 'leaf_last_temp';
+const LS_WIFI = 'leaf_wifi_on';
+
+function getConfig() {
+  return {
+    device: localStorage.getItem(LS_DEVICE) || 'e00fce68439ef0a1c2b84884',
+    token: localStorage.getItem(LS_TOKEN) || '',
+  };
+}
+
+function setLine(el, text, cls) {
+  el.textContent = text;
+  el.className = 'statusline' + (cls ? ' ' + cls : '');
+}
+
+function setButtonsDisabled(disabled, exceptIds) {
+  document.querySelectorAll('button').forEach(b => {
+    if (b.id === 'conn-status') return;
+    if (!exceptIds || !exceptIds.includes(b.id)) b.disabled = disabled;
+  });
+}
+
+// Appelle une Particle.function() via l'API cloud REST, retourne return_value (int).
+// Leve une erreur si device/token manquants, si le HTTP echoue, ou si le device
+// est hors ligne (connected:false).
+async function callFunction(name, arg) {
+  const { device, token } = getConfig();
+  if (!device || !token) {
+    throw new Error('Configure le device ID et le token dans les réglages en bas de page.');
+  }
+  const url = `https://api.particle.io/v1/devices/${encodeURIComponent(device)}/${encodeURIComponent(name)}`;
+  const body = new URLSearchParams();
+  if (arg !== undefined) body.set('arg', arg);
+
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    });
+  } catch (e) {
+    throw new Error('Réseau: impossible de joindre le cloud Particle.');
+  }
+
+  const json = await resp.json().catch(() => null);
+  if (!resp.ok) {
+    if (resp.status === 401 || resp.status === 403) {
+      updateConnStatus('token');
+      throw new Error('Token Particle invalide ou expiré.');
+    }
+    // Quand le device est hors ligne, le cloud Particle repond vite en erreur
+    // (souvent HTTP 400 "Timed out") sans meme essayer de le joindre.
+    const errText = json && (json.error || json.error_description) || '';
+    if (/timed out|not connected|offline/i.test(errText)) {
+      updateConnStatus('offline');
+      throw new Error('Boron hors ligne (pas de LTE actuellement).');
+    }
+    const msg = json && json.error_description ? json.error_description : `HTTP ${resp.status}`;
+    throw new Error(msg);
+  }
+  if (json && json.connected === false) {
+    updateConnStatus('offline');
+    throw new Error('Boron hors ligne (pas de LTE actuellement).');
+  }
+  updateConnStatus('online');
+  return json ? json.return_value : undefined;
+}
+
+// Interprete le code retour standard de nos Particle.function (1=ok, -1=timeout
+// UART cote Boron->ESP32, 0=erreur ESP32) et met a jour la ligne de statut.
+function describeResult(returnValue) {
+  if (returnValue === 1) return { text: '✓ OK', cls: 'ok' };
+  if (returnValue === -1) return { text: '⏱ Timeout (lien UART Boron↔ESP32)', cls: 'err' };
+  if (returnValue === 0) return { text: '✗ Erreur (voir ESP32)', cls: 'err' };
+  return { text: `Réponse inattendue (${returnValue})`, cls: 'warn' };
+}
+
+async function runAction(fnName, arg, lineEl, busyText) {
+  setLine(lineEl, busyText, '');
+  setButtonsDisabled(true);
+  try {
+    const rv = await callFunction(fnName, arg);
+    const { text, cls } = describeResult(rv);
+    setLine(lineEl, text, cls);
+    return rv;
+  } catch (e) {
+    setLine(lineEl, '✗ ' + e.message, 'err');
+    return undefined;
+  } finally {
+    setButtonsDisabled(false);
+  }
+}
+
+// --- Lock / Unlock ---
+document.getElementById('btn-lock').addEventListener('click', () => {
+  runAction('lock', '', document.getElementById('lock-status'), 'Verrouillage…');
+});
+document.getElementById('btn-unlock').addEventListener('click', () => {
+  runAction('unlock', '', document.getElementById('lock-status'), 'Déverrouillage…');
+});
+
+// --- Heat ---
+const tempSlider = document.getElementById('temp-slider');
+const tempValue = document.getElementById('temp-value');
+const savedTemp = localStorage.getItem(LS_TEMP);
+if (savedTemp) { tempSlider.value = savedTemp; tempValue.textContent = savedTemp; }
+tempSlider.addEventListener('input', () => {
+  tempValue.textContent = tempSlider.value;
+});
+document.getElementById('btn-heat-on').addEventListener('click', async () => {
+  localStorage.setItem(LS_TEMP, tempSlider.value);
+  const rv = await runAction('heat', tempSlider.value, document.getElementById('heat-status'), `Envoi ${tempSlider.value}°C…`);
+  if (rv === 1) setClimateStat(true);
+});
+document.getElementById('btn-heat-off').addEventListener('click', async () => {
+  const rv = await runAction('heatOff', '', document.getElementById('heat-status'), 'Arrêt climatisation…');
+  if (rv === 1) setClimateStat(false);
+});
+
+// --- Status ---
+// La fonction "status" ne renvoie que succes/echec - la vraie donnee (SOC/SOH/
+// climate/vehicle) arrive via un event Particle.publish("boron/status", ...).
+// On s'abonne au flux AVANT d'appeler la fonction pour ne pas rater l'event.
+//
+// Pas de EventSource ici: l'API native ne permet pas d'en-tetes personnalises,
+// donc le seul moyen d'authentifier passait par ?access_token= dans l'URL -
+// que Particle a deprecie et refuse desormais purement et simplement (verifie
+// directement: reponse 400 "Access tokens via query params are deprecated").
+// L'abonnement echouait donc a chaque fois, silencieusement (es.onerror ne
+// faisait rien), d'ou le timeout systematique malgre un backend qui repond
+// vite. On lit le flux SSE a la main via fetch()+ReadableStream, qui permet
+// d'envoyer Authorization: Bearer correctement.
+function waitForBoronEvent(eventName, device, token, timeoutMs) {
+  const url = `https://api.particle.io/v1/devices/${encodeURIComponent(device)}/events/${encodeURIComponent(eventName)}`;
+  const controller = new AbortController();
+  let done = false;
+  let resolveReady;
+  const ready = new Promise((resolve) => { resolveReady = resolve; });
+
+  const promise = new Promise((resolve, reject) => {
+    const finish = (err, data) => {
+      if (done) return;
+      done = true;
+      controller.abort();
+      clearTimeout(timer);
+      if (err) reject(err); else resolve(data);
+    };
+
+    const timer = setTimeout(() => finish(new Error('Timeout en attendant la réponse du Boron.')), timeoutMs);
+
+    (async () => {
+      let resp;
+      try {
+        resp = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token },
+          signal: controller.signal,
+        });
+      } catch (e) {
+        resolveReady();
+        finish(new Error('Réseau: impossible de joindre le flux Particle.'));
+        return;
+      }
+      resolveReady();
+      if (!resp.ok || !resp.body) {
+        finish(new Error('Abonnement au flux Particle refusé (HTTP ' + resp.status + ').'));
+        return;
+      }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      try {
+        while (true) {
+          const { value, done: streamDone } = await reader.read();
+          if (streamDone) break;
+          buf += decoder.decode(value, { stream: true });
+          let idx;
+          while ((idx = buf.indexOf('\n\n')) !== -1) {
+            const chunk = buf.slice(0, idx);
+            buf = buf.slice(idx + 2);
+            const dataLine = chunk.split('\n').find(l => l.startsWith('data:'));
+            if (dataLine) {
+              try {
+                const payload = JSON.parse(dataLine.slice(5).trim());
+                finish(null, payload.data);
+                return;
+              } catch (e) {
+                // chunk malforme (heartbeat, etc.) - on continue d'attendre
+              }
+            }
+          }
+        }
+        if (!done) finish(new Error('Flux Particle fermé sans réponse.'));
+      } catch (e) {
+        if (!done) finish(new Error('Flux Particle interrompu.'));
+      }
+    })();
+  });
+
+  return { promise, ready };
+}
+
+function waitForStatusEvent(device, token, timeoutMs) {
+  return waitForBoronEvent('boron/status', device, token, timeoutMs);
+}
+
+function waitForOdometerEvent(device, token, timeoutMs) {
+  return waitForBoronEvent('boron/odometer', device, token, timeoutMs);
+}
+
+// Parse "STATUS soc:62.3 soh:91 climate:0 vehicle:OFF" en objet cle/valeur.
+// Reutilise aussi pour "ODOMETER km:12345" (meme format token:valeur).
+function parseStatusLine(line) {
+  const out = {};
+  line.split(' ').forEach(tok => {
+    const i = tok.indexOf(':');
+    if (i > 0) out[tok.slice(0, i)] = tok.slice(i + 1);
+  });
+  return out;
+}
+
+// Mise a jour optimiste locale (gratuite, aucun appel cloud) juste apres un
+// heat/heatOff reussi - evite d'afficher "Demarrer" alors que la clim tourne
+// deja le temps que l'utilisateur clique sur Actualiser. Reste correcte tant
+// que rien d'autre (minuterie native du vehicule, ~15-20min) ne change l'etat
+// entre-temps sans qu'on rafraichisse - acceptable, pas de watchdog logiciel
+// cote firmware non plus (voir memoire feedback_climate_no_watchdog).
+function setClimateStat(on) {
+  const climate = document.getElementById('stat-climate');
+  climate.textContent = on ? 'ON' : 'OFF';
+  climate.className = 'value ' + (on ? 'on' : 'off');
+}
+
+function renderStatus(fields) {
+  const soc = document.getElementById('stat-soc');
+  const soh = document.getElementById('stat-soh');
+  const vehicle = document.getElementById('stat-vehicle');
+
+  soc.textContent = fields.soc && fields.soc !== '?' ? fields.soc + '%' : '?';
+  soc.className = 'value';
+  soh.textContent = fields.soh && fields.soh !== '?' ? fields.soh + '%' : '?';
+  soh.className = 'value';
+
+  if (fields.climate === undefined) {
+    const climate = document.getElementById('stat-climate');
+    climate.textContent = '?';
+    climate.className = 'value dim';
+  } else {
+    setClimateStat(fields.climate === '1');
+  }
+
+  const vehicleOn = fields.vehicle === 'ON';
+  vehicle.textContent = fields.vehicle || '?';
+  vehicle.className = 'value ' + (!fields.vehicle || fields.vehicle === '?' ? 'dim' : (vehicleOn ? 'on' : 'off'));
+
+  // fields.odo (present dans STATUS et ODOMETER) - derniere valeur connue,
+  // persistee cote ESP32 (NVS), pas forcement fraiche. setLine du bouton
+  // dedie precise quand une lecture vient d'etre tentee.
+  const odo = document.getElementById('stat-odo');
+  if (odo && fields.odo !== undefined) {
+    odo.textContent = fields.odo !== '?' ? fields.odo + ' km' : '?';
+    odo.className = 'value' + (fields.odo === '?' ? ' dim' : '');
+  }
+
+  // Corrige le switch WiFi sur l'etat reel de l'ESP32 (voir commentaire sur
+  // wifiOn plus bas - avant ca, seule une supposition locale par clic).
+  if (fields.wifi !== undefined) {
+    wifiOn = fields.wifi === '1';
+    wifiSwitch.classList.toggle('on', wifiOn);
+    setWifiLabel(wifiOn);
+  }
+
+  document.getElementById('last-updated').textContent =
+    'Mis à jour ' + new Date().toLocaleTimeString('fr-CA');
+}
+
+document.getElementById('btn-refresh').addEventListener('click', async () => {
+  const { device, token } = getConfig();
+  const lineEl = document.getElementById('status-status');
+  if (!device || !token) {
+    setLine(lineEl, '✗ Configure le device ID et le token en bas de page.', 'err');
+    return;
+  }
+  setLine(lineEl, 'Demande en cours…', '');
+  setButtonsDisabled(true);
+  try {
+    const { promise: eventPromise, ready } = waitForStatusEvent(device, token, 15000);
+    await ready;
+    const rv = await callFunction('status', '');
+    if (rv === -1) throw new Error('Timeout (lien UART Boron↔ESP32).');
+    if (rv === 0) throw new Error('Erreur côté ESP32.');
+    const line = await eventPromise;
+    renderStatus(parseStatusLine(line));
+    setLine(lineEl, '✓ Mis à jour', 'ok');
+  } catch (e) {
+    setLine(lineEl, '✗ ' + e.message, 'err');
+  } finally {
+    setButtonsDisabled(false);
+  }
+});
+
+// --- Odometre (lecture a la demande, CAR-CAN, ~3s cote ESP32 - peut echouer
+// si le vehicule n'est pas eveille, voir commentaire dans do_read_odometer_
+// sequence() du firmware). Reponse "ODOMETER km:12345" ou "km:?" si rien capte.
+document.getElementById('btn-read-odo').addEventListener('click', async () => {
+  const { device, token } = getConfig();
+  const lineEl = document.getElementById('odo-status');
+  const odo = document.getElementById('stat-odo');
+  if (!device || !token) {
+    setLine(lineEl, '✗ Configure le device ID et le token en bas de page.', 'err');
+    return;
+  }
+  setLine(lineEl, 'Lecture en cours (jusqu\'à 15s)…', '');
+  setButtonsDisabled(true);
+  try {
+    const { promise: eventPromise, ready } = waitForOdometerEvent(device, token, 20000);
+    await ready;
+    const rv = await callFunction('odometer', '');
+    if (rv === -1) throw new Error('Timeout (lien UART Boron↔ESP32).');
+    if (rv === 0) throw new Error('Erreur côté ESP32.');
+    const line = await eventPromise;
+    const fields = parseStatusLine(line);
+    if (fields.km && fields.km !== '?') {
+      odo.textContent = fields.km + ' km';
+      odo.className = 'value';
+      setLine(lineEl, '✓ Odomètre lu', 'ok');
+    } else {
+      setLine(lineEl, '✗ Rien capté (véhicule probablement endormi) — dernière valeur connue conservée', 'warn');
+    }
+  } catch (e) {
+    setLine(lineEl, '✗ ' + e.message, 'err');
+  } finally {
+    setButtonsDisabled(false);
+  }
+});
+
+// --- Reboot (maintenance) ---
+document.getElementById('btn-reboot-esp').addEventListener('click', () => {
+  if (!confirm("Redémarrer l'ESP32 ? Coupe le WiFi/monitoring quelques secondes.")) return;
+  runAction('espReboot', '', document.getElementById('reboot-esp-status'), 'Redémarrage ESP32…');
+});
+document.getElementById('btn-reboot-boron').addEventListener('click', () => {
+  if (!confirm('Redémarrer le Boron ? Coupe la connexion LTE quelques secondes.')) return;
+  runAction('reboot', '', document.getElementById('reboot-boron-status'), 'Redémarrage Boron…');
+});
+
+// --- WiFi toggle ---
+const wifiSwitch = document.getElementById('wifi-switch');
+const wifiStateLabel = document.getElementById('wifi-state-label');
+// Init depuis le dernier etat connu en local (pas d'appel cloud au chargement -
+// contrainte data minimale, voir memoire projet). Corrige aussi par
+// renderStatus() (champ wifi: de STATUS) si l'utilisateur clique Actualiser,
+// ou si l'etat a change ailleurs (autre appareil, reboot ESP32).
+let wifiOn = localStorage.getItem(LS_WIFI) === '1';
+if (wifiOn) { wifiSwitch.classList.add('on'); }
+function setWifiLabel(on) {
+  wifiStateLabel.textContent = on ? 'ON' : 'OFF';
+  wifiStateLabel.className = 'value ' + (on ? 'on' : 'off');
+  localStorage.setItem(LS_WIFI, on ? '1' : '0');
+}
+setWifiLabel(wifiOn);
+wifiSwitch.addEventListener('click', async () => {
+  const lineEl = document.getElementById('wifi-status');
+  const target = !wifiOn;
+  setLine(lineEl, target ? 'Activation du WiFi…' : 'Coupure du WiFi…', '');
+  setButtonsDisabled(true, []);
+  try {
+    const rv = await callFunction('wifi', target ? 'on' : 'off');
+    const { text, cls } = describeResult(rv);
+    if (rv === 1) {
+      wifiOn = target;
+      wifiSwitch.classList.toggle('on', wifiOn);
+      setWifiLabel(wifiOn);
+    }
+    setLine(lineEl, text, cls);
+  } catch (e) {
+    setLine(lineEl, '✗ ' + e.message, 'err');
+  } finally {
+    setButtonsDisabled(false);
+  }
+});
+
+// --- Settings ---
+const cfgDevice = document.getElementById('cfg-device');
+const cfgToken = document.getElementById('cfg-token');
+const cfg = getConfig();
+cfgDevice.value = cfg.device;
+cfgToken.value = cfg.token;
+
+document.getElementById('btn-save-cfg').addEventListener('click', () => {
+  localStorage.setItem(LS_DEVICE, cfgDevice.value.trim());
+  localStorage.setItem(LS_TOKEN, cfgToken.value.trim());
+  setLine(document.getElementById('cfg-status'), '✓ Sauvegardé', 'ok');
+  checkDeviceOnline();
+});
+
+// --- Statut en ligne / hors ligne ---
+// Interroge directement le cloud Particle (pas le Boron) pour savoir s'il est
+// connecte : ca ne consomme aucune donnee cellulaire cote appareil.
+const connEl = document.getElementById('conn-status');
+const connText = document.getElementById('conn-text');
+
+function updateConnStatus(state) {
+  connEl.classList.remove('online', 'offline');
+  if (state === 'online') {
+    connEl.classList.add('online');
+    connText.textContent = 'En ligne';
+  } else if (state === 'offline') {
+    connEl.classList.add('offline');
+    connText.textContent = 'Hors ligne';
+  } else if (state === 'token') {
+    connEl.classList.add('offline');
+    connText.textContent = 'Token invalide/expiré';
+  } else if (state === 'network') {
+    connText.textContent = 'Erreur réseau';
+  } else {
+    connText.textContent = 'Statut inconnu';
+  }
+}
+
+async function checkDeviceOnline() {
+  const { device, token } = getConfig();
+  if (!device || !token) {
+    updateConnStatus(null);
+    return;
+  }
+  connText.textContent = 'Vérification…';
+  connEl.classList.remove('online', 'offline');
+  try {
+    const url = `https://api.particle.io/v1/devices/${encodeURIComponent(device)}`;
+    const resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+    const json = await resp.json().catch(() => null);
+    if (resp.status === 401 || resp.status === 403) {
+      updateConnStatus('token');
+      return;
+    }
+    if (!resp.ok || !json) {
+      updateConnStatus('network');
+      return;
+    }
+    updateConnStatus(json.connected === true ? 'online' : 'offline');
+  } catch (e) {
+    updateConnStatus('network');
+  }
+}
+
+connEl.addEventListener('click', checkDeviceOnline);
+checkDeviceOnline();
+
+// Requis par Chrome/Android pour proposer "Installer l'application" (icone
+// + lancement plein ecran) - voir sw.js.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
