@@ -4,6 +4,8 @@
 
 Firmware DIY pour contrôler une Nissan Leaf ZE1 (2019+) à distance : verrouillage/déverrouillage des portes, préconditionnement climatisation, et monitoring batterie/véhicule en direct, soit en local via WiFi (à côté de la voiture), soit à distance depuis n'importe où via un module cellulaire LTE (Particle Boron) et une page web.
 
+Conçu pour remplacer le TCU d'origine du véhicule (module télématique) une fois qu'il ne fonctionnait plus : l'ESP32 reprend les mêmes fonctions de verrouillage/déverrouillage et de contrôle climatisation à distance en parlant directement aux bus CAN du véhicule, le Boron fournissant la connectivité LTE que le TCU mort assurait avant.
+
 Projet personnel, non affilié à Nissan. Les trames CAN (wake-up, lock/unlock, décodage batterie) viennent de rétro-ingénierie (voir [Sources](#sources)) ; certaines sont confirmées sur le véhicule, d'autres sont du best-effort documenté dans le code.
 
 ## Fonctionnalités
@@ -45,6 +47,7 @@ CLAUDE.md            Référence technique détaillée (architecture, guards, d�
 - **Buck 12V vers 5V** vers le pin VIN de l'ESP32. La sortie 3V3 de l'ESP32 alimente les deux transceivers SN65HVD230. Un seul point GND commun (buck + ESP32 + les deux transceivers), relié à la masse châssis par un seul fil, pour éviter les boucles de masse.
 - **Résistances pull-up 10kOhm** sur les lignes TX de CAR-CAN et EV-CAN (GPIO32 et GPIO26, chacune vers 3.3V) ; pas nécessaire sur RX, GND, ou VCC.
 - **Point de branchement** : sur cette ZE1 (2019, 40 kWh), les deux bus ont été tapés au **connecteur gateway M101** : EV-CAN sur les pins 12 (H) / 24 (L), CAR-CAN sur les pins 1 (H) / 13 (L). Le brochage du connecteur et le point de tap exact varient selon l'année-modèle et la finition ; à vérifier sur ton propre véhicule avant de câbler.
+- **TCU d'origine** : sur le montage de référence, les fils CAN-H et CAN-L du TCU d'origine (mort) ont été coupés/débranchés (confirmé) pour qu'il ne puisse plus interférer sur le bus, tout en le laissant alimenté par ailleurs (ses fonctions non-CAN, comme le Bluetooth mains-libres, continuent de fonctionner). Si ton TCU est encore vivant et connecté au CAN, attends-toi à ce qu'il réponde aux trames de réveil/commande envoyées par ce firmware et entre potentiellement en conflit.
 
 Le boîtier et les étapes complètes de câblage/assemblage ne sont pas encore finalisées dans ce repo ; voir [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) pour ce qui a été journalisé jusqu'ici.
 

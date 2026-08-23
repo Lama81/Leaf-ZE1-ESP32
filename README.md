@@ -4,6 +4,8 @@
 
 DIY firmware to remotely control a Nissan Leaf ZE1 (2019+): lock/unlock the doors, precondition the climate control, and monitor battery/vehicle status live, either locally over WiFi (next to the car) or from anywhere via a cellular LTE module (Particle Boron) and a web page.
 
+Built to replace the car's original TCU (telematics control unit) once it stopped working: the ESP32 takes over the same lock/unlock and climate remote-control features by talking directly to the vehicle's CAN buses, with the Boron providing the LTE connectivity the dead TCU used to.
+
 Personal project, not affiliated with Nissan. The CAN frames (wake-up, lock/unlock, battery decoding) come from reverse engineering (see [Sources](#sources)); some are confirmed on the vehicle, others are documented best-effort guesses in the code.
 
 ## Features
@@ -45,6 +47,7 @@ CLAUDE.md            Detailed technical reference (architecture, guards, CAN dec
 - **12V-to-5V buck converter** into the ESP32's VIN pin. The ESP32's own 3V3 output powers both SN65HVD230 transceivers. Use a single common ground point (buck + ESP32 + both transceivers) tied to chassis ground with one wire, to avoid ground loops.
 - **10kOhm pull-up resistors** on the CAR-CAN and EV-CAN TX lines (GPIO32 and GPIO26, each to 3.3V); not needed on RX, GND, or VCC lines.
 - **Tap point**: on this ZE1 (2019, 40 kWh), both buses were tapped at the **gateway connector M101**: EV-CAN on pins 12 (H) / 24 (L), CAR-CAN on pins 1 (H) / 13 (L). Connector pinout and exact tap point vary by model year and trim; verify against your own vehicle before wiring.
+- **Original TCU**: on the reference build, the dead OEM TCU's CAN-H and CAN-L wires were cut/disconnected (confirmed) so it can no longer interfere on the bus, while leaving it otherwise powered (its non-CAN functions, like Bluetooth handsfree, kept working). If your TCU is still alive and connected to CAN, expect it to respond to and possibly conflict with the wake-up/command frames this firmware sends.
 
 Enclosure and full soldering/assembly steps aren't finalized in this repo yet; see [`CARNET_DE_BORD.md`](CARNET_DE_BORD.md) (French) for what has been logged so far.
 

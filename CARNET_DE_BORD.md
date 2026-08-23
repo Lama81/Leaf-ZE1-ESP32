@@ -45,6 +45,7 @@ Convention de couleur de fil utilisée sur le montage de référence : bleu = TX
 - Emplacement physique du tap (sur cette ZE1 2019, 40 kWh) : connecteur gateway **M101**. EV-CAN sur les pins 12 (H) / 24 (L), CAR-CAN sur les pins 1 (H) / 13 (L). Le brochage exact varie selon l'année-modèle/finition, à revérifier au cas par cas.
 - Alimentation 12V tirée depuis : à compléter
 - Fusible ajouté : à compléter
+- TCU d'origine : mort, but du projet est de le remplacer. CAN-H et CAN-L du TCU coupés/débranchés (confirmé) pour qu'il n'interfère plus sur le bus, laissé alimenté par ailleurs (Bluetooth mains-libres toujours fonctionnel).
 
 ---
 
